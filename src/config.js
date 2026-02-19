@@ -6,12 +6,20 @@ const RammerheadJSFileCache = require('./classes/RammerheadJSFileCache.js');
 
 const enableWorkers = os.cpus().length !== 1;
 
+// ensure writable directories on PaaS
+if (!fs.existsSync('/tmp/sessions')) {
+    fs.mkdirSync('/tmp/sessions', { recursive: true });
+}
+if (!fs.existsSync('/tmp/cache-js')) {
+    fs.mkdirSync('/tmp/cache-js', { recursive: true });
+}
+
 module.exports = {
     //// HOSTING CONFIGURATION ////
 
-    bindingAddress: '127.0.0.1',
-    port: 8080,
-    crossDomainPort: 8081,
+    bindingAddress: '0.0.0.0',
+    port: process.env.PORT || 8080,
+    crossDomainPort: process.env.PORT || 8080,
     publicDir: path.join(__dirname, '../public'), // set to null to disable
 
     // enable or disable multithreading
@@ -44,7 +52,7 @@ getServerInfo: (req) => {
 },
 
     // enforce a password for creating new sessions. set to null to disable
-    password: 'sharkie4life',
+    password: null,
 
     // disable or enable localStorage sync (turn off if clients send over huge localStorage data, resulting in huge memory usages)
     disableLocalStorageSync: false,
@@ -55,7 +63,7 @@ getServerInfo: (req) => {
     // caching options for js rewrites. (disk caching not recommended for slow HDD disks)
     // recommended: 50mb for memory, 5gb for disk
     // jsCache: new RammerheadJSMemCache(5 * 1024 * 1024),
-    jsCache: new RammerheadJSFileCache(path.join(__dirname, '../cache-js'), 5 * 1024 * 1024 * 1024, 50000, enableWorkers),
+    jsCache: new RammerheadJSFileCache('/tmp/cache-js', 5 * 1024 * 1024 * 1024, 50000, enableWorkers),
 
     // whether to disable http2 support or not (from proxy to destination site).
     // disabling may reduce number of errors/memory, but also risk
@@ -81,7 +89,7 @@ getServerInfo: (req) => {
 
     // see src/classes/RammerheadSessionFileCache.js for more details and options
     fileCacheSessionConfig: {
-        saveDirectory: path.join(__dirname, '../sessions'),
+        saveDirectory: '/tmp/sessions',
         cacheTimeout: 1000 * 60 * 20, // 20 minutes
         cacheCheckInterval: 1000 * 60 * 10, // 10 minutes
         deleteUnused: true,
